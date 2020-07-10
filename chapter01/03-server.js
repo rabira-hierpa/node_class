@@ -1,8 +1,8 @@
 const http = require('http');
 const qureystring = require('querystring');
+const fs = require('fs');
 const port = process.env.PORT || 1337;
-
-// respond with text
+// respond with plain text
 function respondText(req, res) {
 	console.log('1-respondText served at ' + Date.now());
 	res.setHeader('Content-Type', 'text/plain');
@@ -20,7 +20,6 @@ function respondNotFound(req, res) {
 	res.writeHead(404, { 'Content-Type': 'text/plain' });
 	res.end('Not Found');
 }
-
 // respons for echo url
 function respondEcho(req, res) {
 	const { input = '' } = qureystring.parse(
@@ -38,11 +37,24 @@ function respondEcho(req, res) {
 	);
 	console.log('Echo response served at ' + Date.now());
 }
+// File serving
+function respondStatic(req, res) {
+	// simple translation of req.url to local dir strutucture
+	const filename = `${__dirname}/public${req.url.split('/static')[1]}`;
+	// read file from the local dir and send it to the browser
+	// createReadStream ==> creates a Stream object for the given filename
+	// on() ==> listens for error
+	// pipe() ==> connects to the response object
+	fs.createReadStream(filename)
+		.on('error', () => respondNotFound(req, res))
+		.pipe(res);
+}
 
 const server = http.createServer(function (req, res) {
 	if (req.url === '/') return respondText(req, res);
 	if (req.url === '/json') return respondJSON(req, res);
 	if (req.url.match(/^\/echo/)) return respondEcho(req, res);
+	if (req.url.match(/^\/static/)) return respondStatic(req, res);
 	respondNotFound(req, res);
 });
 
