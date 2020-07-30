@@ -10,3 +10,6 @@ window.form.addEventListener('submit', function (evt) {
 	window.fetch(`/chat?message=${window.input.value}`);
 	window.input.value = '';
 });
+new window.EventSource('/static/chat.html').onhistory = function (event) {
+	window.messageHistory.innerHTML += `<p>${event.data}</p>`;
+};
