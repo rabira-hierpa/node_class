@@ -5,7 +5,6 @@ const port = process.env.PORT || 1337;
 const chatEmitter = new EventEmitter();
 const app = express();
 let textResponse = 0;
-chatEmitter.on('message', console.log);
 // respond with plain text
 function respondText(req, res) {
 	textResponse += 1;
@@ -64,11 +63,31 @@ function respondStatic(req, res) {
 	fs.createReadStream(filename)
 		.on('error', () => respondNotFound(req, res))
 		.pipe(res);
+	if (req.params[0] === 'chat.html') {
+		const filename = `${__dirname}/chat_history/message.txt`;
+		chatEmitter.emit('history', filename);
+		// res.end();
+		fs.createReadStream(filename)
+			.on('error', () => respondNotFound(req, res))
+			.pipe(res);
+		// console.log(res);
+	}
 }
 // chat server
 function respondChat(req, res) {
-	const { message } = req.query;
+	let { message } = req.query;
+	message += '\n';
 	chatEmitter.emit('message', message);
+	const filename = `${__dirname}/chat_history/message.txt`;
+	fs.open(filename, 'a', (err, fd) => {
+		fs.appendFile(filename, message, 'utf8', (err) => {
+			fs.close(fd, (err) => {
+				if (err) throw err;
+			});
+			if (err) throw err;
+			console.log('The ' + message + ' was appended to file!');
+		});
+	});
 	res.end();
 }
 function respondSSE(req, res) {
